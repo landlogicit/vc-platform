@@ -144,6 +144,10 @@ angular.module('platformWebApp', AppDependencies).
                 $state.go('workspace.appLicense');
             };
 
+            $scope.showVersionInfo = function () {
+                $state.go('workspace.systemInfo');
+            };
+
         }])
     // Specify SignalR server URL (application URL)
     .factory('platformWebApp.signalRServerName', ['$location', function ($location) {
@@ -239,10 +243,10 @@ angular.module('platformWebApp', AppDependencies).
                 var authData = authDataStorage.getStoredData();
                 var authHeaders = authData ? { Authorization: 'Bearer ' + authData.token } : {};
                 item.headers = angular.extend({}, item.headers, authHeaders);
-                FileUploader.prototype.onAfterAddingFile(item);
-            }
+                this.onAfterAddingFile(item);
+            };
             return FileUploader;
-        }])
+        }]);
     }])
     .config(['$stateProvider', '$httpProvider', 'uiSelectConfig', 'datepickerConfig', 'datepickerPopupConfig', 'tagsInputConfigProvider', '$compileProvider',
         function ($stateProvider, $httpProvider, uiSelectConfig, datepickerConfig, datepickerPopupConfig, tagsInputConfigProvider, $compileProvider) {
@@ -350,13 +354,20 @@ angular.module('platformWebApp', AppDependencies).
                 //timeout need because $state not fully loading in run method and need to wait little time
                 $timeout(function () {
                     if (authContext.isAuthenticated) {
+                        var currentState = $state.current;
                         if (authContext.passwordExpired) {
                             $state.go('changePasswordDialog', {
                                 onClose: function () {
-                                    $state.go('workspace');
+                                    if (!currentState.abstract
+                                        && currentState.name !== 'loginDialog'
+                                        && currentState.name !== 'changePasswordDialog') {
+                                        $state.go(currentState);
+                                    } else {
+                                        $state.go('workspace');
+                                    }
                                 }
                             });
-                        } else if (!$state.current.name || $state.current.name === 'loginDialog') {
+                        } else if (!currentState.name || currentState.name === 'loginDialog') {
                             $state.go('workspace');
                         }
                     } else {
